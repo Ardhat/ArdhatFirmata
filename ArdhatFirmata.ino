@@ -736,9 +736,11 @@ void loop()
       if (IS_PIN_ANALOG(pin) && pinConfig[pin] == ANALOG) {
         analogPin = PIN_TO_ANALOG(pin);
         if (analogInputsToReport & (1 << analogPin)) {
-        if (analogPin==4) 
-        {
-          Firmata.sendAnalog(4, readSPI(0x10)); // register 0x10 is version, should be 0x24
+        if (analogPin==8) {
+          Firmata.sendAnalog(analogPin, readSPI(0x10)); // RFM69 register 0x10 is version, should be 0x24
+        }
+        else if (analogPin==9) {
+          Firmata.sendAnalog(analogPin, readSPI(0x42)); // RFM95 register 0x42 is version, should be 0x12
         }
         else Firmata.sendAnalog(analogPin, analogRead(analogPin));  
         }
