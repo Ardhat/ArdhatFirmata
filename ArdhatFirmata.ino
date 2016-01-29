@@ -27,6 +27,7 @@
 #include <Wire.h>
 #include <Firmata.h>
 #include <SM.h>
+#include <SPI.h> 
 
 #define I2C_WRITE                   B00000000
 #define I2C_READ                    B00001000
@@ -688,11 +689,14 @@ void setup()
 
   Firmata.begin(57600);
   systemResetCallback();  // reset to default config
-
   
   pinMode(LED, OUTPUT); //setup status LED pin
   pinMode(NAV, INPUT); //setup Nav Switch pin
   pinMode(nPIPWR, INPUT_PULLUP); //turn off Pi by default
+//initialize SPI bus 
+  digitalWrite(SS, HIGH);
+  pinMode(SS, OUTPUT);
+  SPI.begin();
    
 }
 
@@ -732,7 +736,11 @@ void loop()
       if (IS_PIN_ANALOG(pin) && pinConfig[pin] == ANALOG) {
         analogPin = PIN_TO_ANALOG(pin);
         if (analogInputsToReport & (1 << analogPin)) {
-          Firmata.sendAnalog(analogPin, analogRead(analogPin));
+        if (analogPin==4) 
+        {
+          Firmata.sendAnalog(4, readSPI(0x10)); // register 0x10 is version, should be 0x24
+        }
+        else Firmata.sendAnalog(analogPin, analogRead(analogPin));  
         }
       }
     }
@@ -748,3 +756,38 @@ void loop()
     EXEC(led);  // drive status LED
     
 }
+
+
+
+
+
+/*==============================================================================
+ * SPI subroutines for RFM radio
+ *============================================================================*/
+
+  
+// select the RFM69 transceiver (save SPI settings, set CS low)
+void select() {
+  // set RFM69 SPI settings
+  SPI.setDataMode(SPI_MODE0);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setClockDivider(SPI_CLOCK_DIV4); // decided to slow down from DIV2 after SPI stalling in some instances, especially visible on mega1284p when RFM69 and FLASH chip both present
+  digitalWrite(SS, LOW);
+}
+
+// unselect the RFM69 transceiver (set CS high, restore SPI settings)
+void unselect() {
+  digitalWrite(SS, HIGH);
+}
+
+
+uint8_t readSPI(uint8_t addr)
+{
+  select();
+  SPI.transfer(addr & 0x7F);
+  uint8_t regval = SPI.transfer(0);
+  unselect();
+  return regval;
+}
+
+
