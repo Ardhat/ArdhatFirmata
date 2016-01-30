@@ -48,6 +48,8 @@
 #define NAV  A7
 #define nPIPWR  A3
 
+#define TOTAL_ANALOG_PINS       10 // 8 real +2 fake for easy access to extra values from Ardhat 
+#define TOTAL_PINS              24 // 14 digital + 10 analog
 
 /*==============================================================================
  * GLOBAL VARIABLES
